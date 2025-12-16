@@ -64,6 +64,14 @@ class VideoPlayer(QObject):
     def set_volume(self, volume):
         """Set playback volume (0-100)"""
         self.media_player.audio_set_volume(volume)
+    
+    def set_rate(self, rate):
+        """Set playback speed (0.5 = half speed, 2.0 = double speed)"""
+        self.media_player.set_rate(rate)
+    
+    def get_rate(self):
+        """Get current playback speed"""
+        return self.media_player.get_rate()
         
     def update_ui(self):
         """Update UI with current playback position"""

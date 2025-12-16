@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# PyQt
+*.ui.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VLC
+*.m3u
+*.m3u8
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Model cache (Whisper models can be large)
+.cache/
+model_cache/
+
+# Build artifacts
+*.spec
+dist/
+build/

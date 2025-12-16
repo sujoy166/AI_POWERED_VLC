@@ -3,13 +3,14 @@ import os
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                             QHBoxLayout, QPushButton, QSlider, QLabel, 
-                            QFileDialog, QMessageBox)
+                            QFileDialog, QMessageBox, QFrame)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut, QAction
 
 # Import our custom modules
 from video_player import VideoPlayer
 from fullscreen_widget import FullscreenVideoWidget
+from The_Worker_Thread import WhisperWorker
 import ui_styles
 
 
@@ -22,8 +23,14 @@ class VLCPlayerGUI(QMainWindow):
         self.current_file = None
         self.is_fullscreen = False
         self.fullscreen_widget = None
+        
+        # Voice control setup
+        self.voice_thread = None
+        self.voice_enabled = False
+        
         self.init_ui()
         self.connect_signals()
+        self.start_voice_control()
         
     def init_ui(self):
         """Initialize the user interface"""
@@ -107,6 +114,28 @@ class VLCPlayerGUI(QMainWindow):
         self.status_label = QLabel(ui_styles.STATUS_MESSAGES['ready'])
         self.status_label.setStyleSheet(ui_styles.STATUS_LABEL_STYLE)
         controls_layout.addWidget(self.status_label)
+        
+        # Voice control indicator
+        voice_indicator_layout = QHBoxLayout()
+        self.voice_status_label = QLabel("🎤 Voice Control: Starting...")
+        self.voice_status_label.setStyleSheet("""
+            color: #FFD700;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 5px;
+            background-color: rgba(255, 215, 0, 0.1);
+            border-radius: 5px;
+        """)
+        voice_indicator_layout.addWidget(self.voice_status_label)
+        voice_indicator_layout.addStretch()
+        
+        self.toggle_voice_btn = QPushButton("🎤 Disable Voice")
+        self.toggle_voice_btn.setStyleSheet(ui_styles.BUTTON_STYLE)
+        self.toggle_voice_btn.clicked.connect(self.toggle_voice_control)
+        self.toggle_voice_btn.setToolTip("Enable/Disable voice commands")
+        voice_indicator_layout.addWidget(self.toggle_voice_btn)
+        
+        controls_layout.addLayout(voice_indicator_layout)
         
         main_layout.addLayout(controls_layout)
         
@@ -292,6 +321,147 @@ class VLCPlayerGUI(QMainWindow):
         """Handle escape key press"""
         if self.is_fullscreen:
             self.exit_fullscreen()
+    
+    def start_voice_control(self):
+        """Start voice control worker thread"""
+        try:
+            self.voice_thread = WhisperWorker()
+            self.voice_thread.command_detected.connect(self.handle_voice_command)
+            self.voice_thread.start()
+            self.voice_enabled = True
+            self.voice_status_label.setText("🎤 Voice Control: ACTIVE")
+            self.voice_status_label.setStyleSheet("""
+                color: #00FF00;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 5px;
+                background-color: rgba(0, 255, 0, 0.1);
+                border-radius: 5px;
+            """)
+            print("Voice control started successfully")
+        except Exception as e:
+            print(f"Error starting voice control: {e}")
+            self.voice_status_label.setText(f"🎤 Voice Control: ERROR - {str(e)}")
+            self.voice_status_label.setStyleSheet("""
+                color: #FF0000;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 5px;
+                background-color: rgba(255, 0, 0, 0.1);
+                border-radius: 5px;
+            """)
+            self.voice_enabled = False
+    
+    def toggle_voice_control(self):
+        """Toggle voice control on/off"""
+        if self.voice_enabled:
+            if self.voice_thread:
+                self.voice_thread.stop()
+                self.voice_thread = None
+            self.voice_enabled = False
+            self.voice_status_label.setText("🎤 Voice Control: DISABLED")
+            self.voice_status_label.setStyleSheet("""
+                color: #888888;
+                font-size: 13px;
+                font-weight: bold;
+                padding: 5px;
+                background-color: rgba(136, 136, 136, 0.1);
+                border-radius: 5px;
+            """)
+            self.toggle_voice_btn.setText("🎤 Enable Voice")
+        else:
+            self.start_voice_control()
+            self.toggle_voice_btn.setText("🎤 Disable Voice")
+    
+    def handle_voice_command(self, text):
+        """Handle voice commands from the worker thread"""
+        if not self.voice_enabled:
+            return
+        
+        # Sanitize input
+        clean_text = text.lower().replace(".", "").replace("!", "").replace("?", "").strip()
+        print(f"Voice command received: '{clean_text}'")
+        
+        # Update status with the command
+        self.status_label.setText(f"🎤 Voice: '{clean_text}'")
+        
+        # Command mapping
+        if "play" in clean_text or "resume" in clean_text or "start" in clean_text:
+            self.play_video()
+            self.status_label.setText(f"🎤 Voice: Playing video")
+            
+        elif "pause" in clean_text:
+            self.pause_video()
+            self.status_label.setText(f"🎤 Voice: Paused")
+            
+        elif "stop" in clean_text:
+            self.stop_video()
+            self.status_label.setText(f"🎤 Voice: Stopped")
+        
+        elif "open" in clean_text or "load" in clean_text or "file" in clean_text:
+            self.open_file()
+            self.status_label.setText(f"🎤 Voice: Opening file dialog")
+            
+        # Seeking commands
+        elif "forward" in clean_text or "skip" in clean_text or "ahead" in clean_text:
+            self.seek_forward()
+            self.status_label.setText(f"🎤 Voice: Skipping forward")
+            
+        elif "back" in clean_text or "backward" in clean_text or "rewind" in clean_text:
+            self.seek_backward()
+            self.status_label.setText(f"🎤 Voice: Rewinding")
+        
+        # Speed control
+        elif "fast" in clean_text or "faster" in clean_text or "speed up" in clean_text:
+            self.video_player.media_player.set_rate(1.5)
+            self.status_label.setText(f"🎤 Voice: Speed 1.5x")
+            
+        elif "slow" in clean_text or "slower" in clean_text or "slow down" in clean_text:
+            self.video_player.media_player.set_rate(0.7)
+            self.status_label.setText(f"🎤 Voice: Speed 0.7x")
+            
+        elif "normal speed" in clean_text or "reset speed" in clean_text:
+            self.video_player.media_player.set_rate(1.0)
+            self.status_label.setText(f"🎤 Voice: Speed 1.0x")
+        
+        # Volume control
+        elif "louder" in clean_text or "volume up" in clean_text or "increase volume" in clean_text:
+            current_volume = self.volume_slider.value()
+            new_volume = min(100, current_volume + 10)
+            self.volume_slider.setValue(new_volume)
+            self.status_label.setText(f"🎤 Voice: Volume {new_volume}%")
+            
+        elif "quieter" in clean_text or "volume down" in clean_text or "decrease volume" in clean_text or "lower" in clean_text:
+            current_volume = self.volume_slider.value()
+            new_volume = max(0, current_volume - 10)
+            self.volume_slider.setValue(new_volume)
+            self.status_label.setText(f"🎤 Voice: Volume {new_volume}%")
+        
+        elif "mute" in clean_text:
+            self.volume_slider.setValue(0)
+            self.status_label.setText(f"🎤 Voice: Muted")
+        
+        elif "unmute" in clean_text or "full volume" in clean_text:
+            self.volume_slider.setValue(100)
+            self.status_label.setText(f"🎤 Voice: Volume 100%")
+        
+        # Fullscreen
+        elif "fullscreen" in clean_text or "full screen" in clean_text:
+            if not self.is_fullscreen:
+                self.enter_fullscreen()
+                self.status_label.setText(f"🎤 Voice: Fullscreen mode")
+        
+        elif "exit fullscreen" in clean_text or "window mode" in clean_text or "normal" in clean_text:
+            if self.is_fullscreen:
+                self.exit_fullscreen()
+                self.status_label.setText(f"🎤 Voice: Exiting fullscreen")
+    
+    def closeEvent(self, event):
+        """Handle window close event - cleanup voice thread"""
+        if self.voice_thread:
+            print("Stopping voice control thread...")
+            self.voice_thread.stop()
+        super().closeEvent(event)
 
 
 def main():

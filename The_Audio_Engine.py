@@ -7,21 +7,40 @@ import queue
 # CONFIGURATION
 SAMPLE_RATE = 16000
 BLOCK_SIZE = 24000  # 1.5 seconds per chunk (Balance between latency and context)
-SILENCE_THRESHOLD = 0.01 # Sensitivity (Adjust if mic is noisy)
+SILENCE_THRESHOLD = 0.001  # LOWERED for better sensitivity (was 0.01)
 
 # THE QUEUE (Thread-safe bridge)
 audio_queue = queue.Queue()
 
 class VoiceEngine:
     def __init__(self):
-        print("Loading Whisper Model (tiny.en)...")
+        print("\n" + "="*50)
+        print("🎤 VOICE ENGINE INITIALIZATION")
+        print("="*50)
+        
+        # List available audio devices
+        print("\n📋 Available Audio Devices:")
+        print(sd.query_devices())
+        
+        # Get default input device
+        default_device = sd.query_devices(kind='input')
+        print(f"\n✓ Using Default Input Device:")
+        print(f"  Name: {default_device['name']}")
+        print(f"  Channels: {default_device['max_input_channels']}")
+        print(f"  Sample Rate: {SAMPLE_RATE} Hz")
+        
+        print("\n🤖 Loading Whisper Model (tiny.en)...")
+        print("   (This may take 30-60 seconds on first run)")
         # tiny.en is optimized for English commands (faster/better than base)
         self.asr = pipeline(
             "automatic-speech-recognition",
             model="openai/whisper-tiny.en",
-            device="cpu" 
+            device="cpu",
+            chunk_length_s=30,
+            stride_length_s=5
         )
-        print("Whisper Loaded.")
+        print("✓ Whisper Model Loaded Successfully!")
+        print("="*50 + "\n")
 
     def audio_callback(self, indata, frames, time, status):
         """
@@ -59,26 +78,33 @@ class VoiceEngine:
         # Get audio block
         audio_data = audio_queue.get()
         
-        # 1. Cheap VAD (Voice Activity Detection)
-        # If audio is too quiet, discard it to save CPU
+        # 1. Voice Activity Detection with DEBUG
         volume = np.linalg.norm(audio_data) * 10
+        
+        # Debug: Print volume level every time (helps diagnose mic issues)
+        print(f"🔊 Audio Level: {volume:.4f} (Threshold: {SILENCE_THRESHOLD})")
+        
         if volume < SILENCE_THRESHOLD:
+            print("   ⚠️  Too quiet - ignored")
             return None
+        
+        print(f"   ✓ Voice detected! Processing...")
 
         # 2. Transcribe (Flatten array for Whisper)
-        # Squeeze removes dimensions to make it a flat 1D array
         audio_flat = np.squeeze(audio_data)
         
         try:
             result = self.asr(audio_flat)
             text = result["text"].lower().strip()
             
+            print(f"   🎤 Transcribed: '{text}'")
+            
             # 3. Hallucination Filter
-            # Whisper sometimes outputs "you" or "." on silence. Filter short garbage.
             if len(text) < 2: 
+                print(f"   ⚠️  Too short - ignored")
                 return None
                 
             return text
         except Exception as e:
-            print(f"Transcription error: {e}")
+            print(f"   ❌ Transcription error: {e}")
             return None

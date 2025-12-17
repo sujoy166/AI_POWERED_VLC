@@ -5,47 +5,48 @@ A modern, feature-rich media player built with Python, PyQt6, and VLC, featuring
 ## ✨ Features
 
 ### 🎥 Core Video Player
-- **Modern Dark UI** - Beautiful, professional interface
+- **Modern Dark UI** - Beautiful, professional Korean-themed interface
 - **Multiple Format Support** - MP4, AVI, MKV, MOV, WMV, FLV, WebM
 - **Fullscreen Mode** - Immersive video-only viewing (F11)
-- **Progress Control** - Visual timeline slider
-- **Volume Control** - Easy volume adjustment
-- **Playback Speed** - Control video speed (0.5x - 2.0x)
+- **Progress Control** - Smooth dragging timeline slider with timestamp preview
+- **Vertical Volume Control** - Smooth vertical volume slider (0-100%)
+- **Playback Speed** - Control video speed via Settings menu (0.5x - 1.5x)
+- **Timestamp Display** - Real-time position tracking (HH:MM:SS format)
 
 ### 🎤 Voice Control (AI-Powered)
 Control your media player using natural voice commands powered by OpenAI Whisper!
 
 #### Playback Commands
 - **"Play"** / **"Resume"** / **"Start"** - Start video playback
-- **"Pause"** - Pause the video
-- **"Stop"** - Stop playback
+- **"Pause"** / **"Hold"** - Pause the video
 
-#### Navigation Commands
-- **"Forward"** / **"Skip"** / **"Ahead"** - Skip forward 10 seconds
-- **"Back"** / **"Backward"** / **"Rewind"** - Go back 10 seconds
+#### Time Jumping Commands
+- **"Go to 1 hour 30 minutes"** - Jump to specific timestamp
+- **"Jump to 2:30:15"** - Jump using HH:MM:SS format
+- **"Skip to 45 minutes"** - Skip to any time position
 
 #### Speed Control
-- **"Fast"** / **"Faster"** / **"Speed up"** - Increase speed to 1.5x
-- **"Slow"** / **"Slower"** / **"Slow down"** - Decrease speed to 0.7x
-- **"Normal speed"** / **"Reset speed"** - Return to normal speed (1.0x)
+- **"Faster"** / **"Speed up"** - Increase speed to 1.5x
+- **"Slower"** / **"Slow down"** - Decrease speed to 0.5x
+- **"Normal"** / **"Normal speed"** - Return to normal speed (1.0x)
 
 #### Volume Control
-- **"Louder"** / **"Volume up"** / **"Increase volume"** - Increase volume by 10%
-- **"Quieter"** / **"Volume down"** / **"Lower"** - Decrease volume by 10%
+- **"Volume up"** / **"Louder"** - Increase volume by 10%
+- **"Volume down"** / **"Quieter"** - Decrease volume by 10%
+- **"Volume 50 percent"** - Set volume to specific percentage
+- **"Volume 75"** - Set volume to 75%
 - **"Mute"** - Set volume to 0%
-- **"Unmute"** / **"Full volume"** - Set volume to 100%
-
-#### Display Commands
-- **"Fullscreen"** / **"Full screen"** - Enter fullscreen mode
-- **"Exit fullscreen"** / **"Window mode"** - Exit fullscreen
-- **"Open"** / **"Load"** / **"File"** - Open file dialog
 
 ### ⌨️ Keyboard Shortcuts
 - **Space** - Toggle play/pause
-- **Left Arrow** - Seek backward 10 seconds
-- **Right Arrow** - Seek forward 10 seconds
 - **F11** - Toggle fullscreen
 - **Escape** - Exit fullscreen
+
+### ⚙️ Settings Menu
+Access playback speed controls through the Settings button:
+- 🐢 Slower (0.5x)
+- ▶ Normal (1.0x)
+- 🐰 Faster (1.5x)
 
 ## 📦 Installation
 
@@ -95,8 +96,18 @@ pip install PyQt6 python-vlc sounddevice numpy torch transformers
 ```
 AI-VLC-Player/
 ├── main.py                    # Application entry point
-├── main_gui.py               # Main GUI with voice integration
-├── video_player.py           # VLC player core functionality
+├── src/                       # Source code
+│   ├── main_gui.py           # Main GUI with voice integration
+│   ├── video_player.py       # VLC player core functionality
+│   ├── The_Audio_Engine.py   # Whisper AI voice recognition
+│   ├── The_Worker_Thread.py  # Voice command processing
+│   ├── fullscreen_widget.py  # Fullscreen mode handler
+│   └── ui_styles.py          # UI styling and themes
+├── docs/                      # Documentation
+│   ├── BUILD_INSTRUCTIONS.md
+│   └── VOICE_TROUBLESHOOTING.md
+├── tests/                     # Testing utilities
+│   └── test_microphone.py    # Microphone testing tool
 ├── The_Audio_Engine.py       # Whisper voice recognition engine
 ├── The_Worker_Thread.py      # Background thread for voice processing
 ├── fullscreen_widget.py      # Fullscreen display handler

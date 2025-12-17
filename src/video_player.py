@@ -44,6 +44,10 @@ class VideoPlayer(QObject):
         self.media_player.set_media(media)
         self.media_player.play()
         self.timer.start(100)  # Update UI every 100ms
+        # Ensure volume is applied after media starts
+        current_volume = self.media_player.audio_get_volume()
+        if current_volume != -1:
+            self.media_player.audio_set_volume(current_volume)
         
     def play(self):
         """Start or resume video playback"""
@@ -63,7 +67,13 @@ class VideoPlayer(QObject):
         
     def set_volume(self, volume):
         """Set playback volume (0-100)"""
-        self.media_player.audio_set_volume(volume)
+        # Ensure volume is within valid range
+        volume = max(0, min(100, int(volume)))
+        result = self.media_player.audio_set_volume(volume)
+        if result == -1:
+            print(f"Warning: Failed to set volume to {volume}")
+        else:
+            print(f"Volume set to: {volume}%")
     
     def set_rate(self, rate):
         """Set playback speed (0.5 = half speed, 2.0 = double speed)"""
